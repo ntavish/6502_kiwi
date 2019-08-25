@@ -189,8 +189,77 @@ void kiwi_write_byte(struct kiwi_ctx *ctx, u16 addr, u8 value)
 */
 static u8 kiwi_6502_address_mode(struct kiwi_ctx *ctx, u8 mode, u16 *addr)
 {
-	ctx->pc += mode_to_size[mode] - 1;
-	return 0;
+	u8 hb, lb;
+	u8 is_acc = 0;
+
+	switch(mode) {
+		case MD_ACCUM:
+			return 1;
+			break;
+		case MD_ABSOL:
+			lb = kiwi_read_byte(ctx, ctx->pc++);
+			hb = kiwi_read_byte(ctx, ctx->pc++);
+			*addr = (hb << 8) | lb;
+			break;
+		case MD_ABS_X:
+			lb = kiwi_read_byte(ctx, ctx->pc++);
+			hb = kiwi_read_byte(ctx, ctx->pc++);
+			*addr = ((hb << 8) | lb) + ctx->regs.x;
+			break;
+		case MD_ABS_Y:
+			lb = kiwi_read_byte(ctx, ctx->pc++);
+			hb = kiwi_read_byte(ctx, ctx->pc++);
+			*addr = ((hb << 8) | lb) + ctx->regs.y;
+			break;
+		case MD_IMMED:
+			*addr = ctx->pc++;
+			break;
+		case MD_IMPLI:
+			//nothing to do, it's implied
+			break;
+		case MD_INDIR:
+			// JMP indirect 0x6C is the only instruction which uses this
+			lb = kiwi_read_byte(ctx, ctx->pc++);
+			hb = kiwi_read_byte(ctx, ctx->pc++);
+			*addr = (hb << 8) | lb;
+			lb = kiwi_read_byte(ctx, *addr);
+			hb = kiwi_read_byte(ctx, *addr+1);
+			*addr = (hb << 8) | lb;
+			break;
+		case MD_X_IND:
+			// this one is weird, it will be like 
+			// see https://github.com/spacerace/6502/blob/master/doc/6502-asm-doc/dr6502-docs/ADDRESS.DOC#L277
+			lb = (kiwi_read_byte(ctx, ctx->pc++) + ctx->regs.x) & 0xFF;
+			hb = (lb + 1) & 0xFF;
+			*addr = kiwi_read_byte(ctx, lb) + (kiwi_read_byte(ctx, hb) << 8);
+			break;
+		case MD_IND_Y:
+			lb = kiwi_read_byte(ctx, ctx->pc++);
+			hb = (lb + 1) & 0xFF;
+			*addr = kiwi_read_byte(ctx, lb) + (kiwi_read_byte(ctx, hb) << 8) + ctx->regs.y;
+			break;
+		case MD_RELAT:
+			*addr = (u16)kiwi_read_byte(ctx, ctx->pc++);
+			if (*addr & 0x80) {
+				*addr |= 0xFF00;
+			}
+			*addr += ctx->pc;
+			break;
+		case MD_ZPAGE:
+			*addr = (u16)kiwi_read_byte(ctx, ctx->pc++);
+			break;
+		case MD_ZPG_X:
+			*addr = (u16)(kiwi_read_byte(ctx, ctx->pc++) + ctx->regs.x) & 0xFF;
+			break;
+		case MD_ZPG_Y:
+			*addr = (u16)(kiwi_read_byte(ctx, ctx->pc++) + ctx->regs.y) & 0xFF;
+			break;
+		case MD_NOTVL:
+
+			break;
+	}
+
+	return is_acc;
 }
 
 u8 kiwi_execute_opcode(struct kiwi_ctx *ctx)
