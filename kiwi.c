@@ -3,6 +3,7 @@ kiwi implementation
 */
 
 #include "kiwi.h"
+#include "instructions.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -34,6 +35,7 @@ enum opcode_mode_types{
 	MD_NOTVL,
 };
 
+// not a useful table
 u8 mode_to_size[] = {
 	1, // MD_ACCUM
 	3, // MD_ABSOL
@@ -129,6 +131,24 @@ u8 opcode_to_cycles[256] = {
 /* F */ 2, 5, 2, 8, 4, 4, 6, 6, 2, 4, 2, 7, 4, 4, 7, 7,
 };
 
+static u8 (*instruction_to_function[])(struct kiwi_ctx *ctx, u16 addr, u8 acc) = {
+	f_adc, f_and, f_asl,
+	f_bcc, f_bcs, f_beq, f_bit, f_bmi, f_bne, f_bpl, f_brk, f_bvc, f_bvs,
+	f_clc, f_cld, f_cli, f_clv, f_cmp, f_cpx, f_cpy,
+	f_dec, f_dex, f_dey,
+	f_eor,
+	f_inc, f_inx, f_iny,
+	f_jmp, f_jsr,
+	f_lda, f_ldx, f_ldy, f_lsr,
+	f_nop,
+	f_ora,
+	f_pha, f_php, f_pla, f_plp,
+	f_rol, f_ror, f_rti, f_rts,
+	f_sbc, f_sec, f_sed, f_sei, f_sta, f_stx, f_sty,
+	f_tax, f_tay, f_tsx, f_txa, f_txs, f_tya,
+	f__n_,
+};
+
 static inline struct bus_device *kiwi_find_mapped_dev(struct kiwi_ctx *ctx, u16 addr)
 {
 	struct bus_device *dev = 0;
@@ -161,16 +181,37 @@ void kiwi_write_byte(struct kiwi_ctx *ctx, u16 addr, u8 value)
 	}
 }
 
+/*
+	This function writes to addr, the calculated address depednding on opcode
+	and following bytes (if any), and returns true is operand is to be ACC register.
+	
+	mode - see opcode_mode_types
+*/
+static u8 kiwi_6502_address_mode(struct kiwi_ctx *ctx, u8 mode, u16 *addr)
+{
+	ctx->pc += mode_to_size[mode] - 1;
+	return 0;
+}
+
 u8 kiwi_execute_opcode(struct kiwi_ctx *ctx)
 {
-	// get the opcode
-	// u8 opcode = ctx->memory[ctx->pc]; // this will change
-	u8 opcode = kiwi_read_byte(ctx, ctx->pc);
-
+	// get the opcode, and increment pc by 1
+	u8 opcode = kiwi_read_byte(ctx, ctx->pc++);
 	u8 mode = opcode_to_mode[opcode];
-	u8 cycles = opcode_to_cycles[opcode];
-	u8 size = mode_to_size[mode];
-	printf("opcode 0x%02x\tmode 0x%02x\tsize %u\tcycles %u\tPC->%u\r\n", opcode, mode, size, cycles, ctx->pc++);
+	
+	// calculate address from mode
+	u16 addr;
+	u8 acc = kiwi_6502_address_mode(ctx, mode, &addr);
+
+	// find out instruction function
+	u8 (*func)(struct kiwi_ctx *ctx, u16 addr, u8 acc) = instruction_to_function[opcode_to_ins[opcode]];
+	
+	// execute instruction
+	u8 extra_cycles = func(ctx, addr, acc);
+
+	// other parameters
+	u8 cycles = opcode_to_cycles[opcode] + extra_cycles;
+	printf("opcode 0x%02x\tmode 0x%02x\tcycles %u\tPC->%u\tfunc %p\r\n", opcode, mode, cycles, ctx->pc, func);
 
 	return cycles;
 }

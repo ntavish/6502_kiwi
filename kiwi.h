@@ -20,7 +20,7 @@ struct regs_6502 {
 /*
 	sr: status bits (7 is msb):
 		7 N : negative (1=negative)
-		6 O : overflow (1=true)
+		6 O : overflow (1=true), sometimes written as V also
 		5 - : ignored (1 always?)
 		4 B : break (1=brk)
 		3 D : decimal mode (1=true)
@@ -29,17 +29,14 @@ struct regs_6502 {
 		0 C : carry (1=true)
 */
 
-enum status_flag_bits {
-	SF_C = (1 << 0),
-	SF_Z = (1 << 1),
-	SF_I = (1 << 2),
-	SF_D = (1 << 3),
-	SF_B = (1 << 4),
-	SF_U = (1 << 5),
-	SF_O = (1 << 6),
-	SF_N = (1 << 7),
-};
-
+#define SF_C ((u8)(1 << 0))
+#define SF_Z ((u8)(1 << 1))
+#define SF_I ((u8)(1 << 2))
+#define SF_D ((u8)(1 << 3))
+#define SF_B ((u8)(1 << 4))
+#define SF_U ((u8)(1 << 5))
+#define SF_O ((u8)(1 << 6))
+#define SF_N ((u8)(1 << 7))
 
 struct bus_device {
 	u16 start;
@@ -98,5 +95,15 @@ u8 kiwi_execute_opcode(struct kiwi_ctx *ctx);
 	registered
 */
 u8 kiwi_attach_device(struct kiwi_ctx *ctx, struct bus_device *dev);
+
+/*
+	reads a byte from the correct 'device'
+*/
+u8 kiwi_read_byte(struct kiwi_ctx *ctx, u16 addr);
+
+/*
+	writes a byte to the correct 'device'
+*/
+void kiwi_write_byte(struct kiwi_ctx *ctx, u16 addr, u8 value);
 
 #endif
