@@ -40,6 +40,14 @@ enum status_flag_bits {
 	SF_N = (1 << 7),
 };
 
+
+struct bus_device {
+	u16 start;
+	u16 end;
+	u8 (*read)(u16 addr);
+	void (*write)(u16 addr, u8 val);
+};
+
 /*
 	= general notes about 6502 processor
 	
@@ -49,19 +57,30 @@ enum status_flag_bits {
 
 	stack: LIFO, top down, 8-bit range, hardcoded range between 0x1FF to 0x100
 	e.g. at init you will set sp to 0xFF (i.e. address 0x1FF), and it goes down
+
+	Devices are memory locations that can be read or written to.
 */
+
+#define MAX_DEVICES	10
 
 struct kiwi_ctx {
 	struct regs_6502 regs; 	// 6502 registers
 	u16 pc;					// program counter
-	u8 *memory;				// address space (16-bit)
+	struct bus_device dev[MAX_DEVICES];	// list of devices on bus
+	u8 num_devices;				// number of valid devices in dev
 };
 
 /*
-	allocates and returns pointer to kiwi context
+	allocates, then initilizes a kiwi context
+	returns pointer to allocated and initialized ctx
 	return 0 on failure
 */
 struct kiwi_ctx* kiwi_create_ctx();
+
+/*
+	initializes the ctx argument by resetting the cpu state
+*/
+struct kiwi_ctx* kiwi_initialize_ctx(struct kiwi_ctx *ctx);
 
 /*
 	resets the cpu state
@@ -69,8 +88,15 @@ struct kiwi_ctx* kiwi_create_ctx();
 void kiwi_reset_cpu(struct kiwi_ctx *ctx);
 
 /*
-	executes one opcode
+	executes one opcode, returns number of cycles taken by instruction
 */
-void kiwi_execute_opcode(struct kiwi_ctx *ctx);
+u8 kiwi_execute_opcode(struct kiwi_ctx *ctx);
+
+
+/*
+	adds dev to internal list of devices for ctx, returns number of devices
+	registered
+*/
+u8 kiwi_attach_device(struct kiwi_ctx *ctx, struct bus_device *dev);
 
 #endif

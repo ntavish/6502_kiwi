@@ -72,13 +72,20 @@ u8 opcode_to_mode[256] = {
 };
 
 enum instructions_6502 {
-	ADC, AND, ASL, BCC, BCS, BEQ, BIT, BMI, BNE,
-	BPL, BRK, BVC, BVS, CLC, CLD, CLI, CLV, CMP,
-	CPX, CPY, DEC, DEX, DEY, EOR, INC, INX, INY,
-	JMP, JSR, LDA, LDX, LDY, LSR, NOP, ORA, PHA,
-	PHP, PLA, PLP, ROL, ROR, RTI, RTS, SBC, SEC,
-	SED, SEI, STA, STX, STY, TAX, TAY, TSX, TXA,
-	TXS, TYA,
+	ADC, AND, ASL,
+	BCC, BCS, BEQ, BIT, BMI, BNE, BPL, BRK, BVC, BVS,
+	CLC, CLD, CLI, CLV, CMP, CPX, CPY,
+	DEC, DEX, DEY,
+	EOR,
+	INC, INX, INY,
+	JMP, JSR,
+	LDA, LDX, LDY, LSR,
+	NOP,
+	ORA,
+	PHA, PHP, PLA, PLP,
+	ROL, ROR, RTI, RTS,
+	SBC, SEC, SED, SEI, STA, STX, STY,
+	TAX, TAY, TSX, TXA, TXS, TYA,
 	_N_, // invalid
 };
 
@@ -122,13 +129,50 @@ u8 opcode_to_cycles[256] = {
 /* F */ 2, 5, 2, 8, 4, 4, 6, 6, 2, 4, 2, 7, 4, 4, 7, 7,
 };
 
-void kiwi_execute_opcode(struct kiwi_ctx *ctx)
+static inline struct bus_device *kiwi_find_mapped_dev(struct kiwi_ctx *ctx, u16 addr)
+{
+	struct bus_device *dev = 0;
+
+	for(u8 i=0; i<ctx->num_devices; i++) {
+		dev = &ctx->dev[i];
+		if(addr >= dev->start && addr <= dev->end) {
+			return dev;
+		}
+	}
+
+	return 0;
+}
+
+u8 kiwi_read_byte(struct kiwi_ctx *ctx, u16 addr)
+{
+	struct bus_device *dev = kiwi_find_mapped_dev(ctx, addr);
+
+	if(dev) {
+		return dev->read(addr);
+	}
+}
+
+void kiwi_write_byte(struct kiwi_ctx *ctx, u16 addr, u8 value)
+{
+	struct bus_device *dev = kiwi_find_mapped_dev(ctx, addr);
+
+	if(dev) {
+		return dev->write(addr, value);
+	}
+}
+
+u8 kiwi_execute_opcode(struct kiwi_ctx *ctx)
 {
 	// get the opcode
-	printf("%u\r\n", ctx->pc);
-	u8 opcode = ctx->memory[ctx->pc++]; // this will change
-	u8 mode = opcode_to_mode
-	u8 cycles = 
+	// u8 opcode = ctx->memory[ctx->pc]; // this will change
+	u8 opcode = kiwi_read_byte(ctx, ctx->pc);
+
+	u8 mode = opcode_to_mode[opcode];
+	u8 cycles = opcode_to_cycles[opcode];
+	u8 size = mode_to_size[mode];
+	printf("opcode 0x%02x\tmode 0x%02x\tsize %u\tcycles %u\tPC->%u\r\n", opcode, mode, size, cycles, ctx->pc++);
+
+	return cycles;
 }
 
 void kiwi_reset_cpu(struct kiwi_ctx *ctx)
@@ -146,13 +190,28 @@ struct kiwi_ctx* kiwi_create_ctx()
 		return 0;
 	}
 
-	u8 *addr = malloc(0xFFFF); // 16-bit address space
-	ctx->memory = addr;
-
-	if(!addr) {
-		free(ctx);
-		ctx = 0;
-	}
+	kiwi_initialize_ctx(ctx);
 
 	return ctx;
+}
+
+struct kiwi_ctx* kiwi_initialize_ctx(struct kiwi_ctx *ctx)
+{
+	ctx->num_devices = 0;
+
+	kiwi_reset_cpu(ctx);
+}
+
+u8 kiwi_attach_device(struct kiwi_ctx *ctx, struct bus_device *dev)
+{
+	if(ctx->num_devices >= MAX_DEVICES) {
+		ctx->num_devices = MAX_DEVICES;
+		return ctx->num_devices;
+	}
+
+	memcpy(&ctx->dev[ctx->num_devices], dev, sizeof(struct bus_device));
+
+	ctx->num_devices++;
+
+	return ctx->num_devices;
 }
