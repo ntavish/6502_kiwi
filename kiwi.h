@@ -3,18 +3,11 @@
 
 #include "types.h"
 
-/*
-	= notes for struct regs_6502:
 
-	sr: status bits (7 is msb):
-		7 N : negative
-		6 O : overflow
-		5 - : ignored
-		4 B : break
-		3 D : decimal
-		2 I : interrupt (IRQ disable)
-		1 Z : zero
-		0 C : carry
+/*
+	All the registers of the CPU, A, X, Y are similar.
+	There is a stack pointer and also a status register to
+	query or set modify some CPU states.
 */
 struct regs_6502 {
 	u8 ac;		// accumulator
@@ -22,6 +15,29 @@ struct regs_6502 {
 	u8 y;		// y register
 	u8 sr;		// status register
 	u8 sp;		// stack pointer
+};
+
+/*
+	sr: status bits (7 is msb):
+		7 N : negative (1=negative)
+		6 O : overflow (1=true)
+		5 - : ignored (1 always?)
+		4 B : break (1=brk)
+		3 D : decimal mode (1=true)
+		2 I : interrupt (1=disable)
+		1 Z : zero (1=result zero)
+		0 C : carry (1=true)
+*/
+
+enum status_flag_bits {
+	SF_C = (1 << 0),
+	SF_Z = (1 << 1),
+	SF_I = (1 << 2),
+	SF_D = (1 << 3),
+	SF_B = (1 << 4),
+	SF_U = (1 << 5),
+	SF_O = (1 << 6),
+	SF_N = (1 << 7),
 };
 
 /*
@@ -41,6 +57,20 @@ struct kiwi_ctx {
 	u8 *memory;				// address space (16-bit)
 };
 
+/*
+	allocates and returns pointer to kiwi context
+	return 0 on failure
+*/
 struct kiwi_ctx* kiwi_create_ctx();
+
+/*
+	resets the cpu state
+*/
+void kiwi_reset_cpu(struct kiwi_ctx *ctx);
+
+/*
+	executes one opcode
+*/
+void kiwi_execute_opcode(struct kiwi_ctx *ctx);
 
 #endif

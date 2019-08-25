@@ -4,6 +4,8 @@ kiwi implementation
 
 #include "kiwi.h"
 #include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
 
 /*
 	see: https://www.masswerk.at/6502/6502_instruction_set.html
@@ -15,7 +17,7 @@ kiwi implementation
 	- Clock cycles for instruction
 */
 
-enum opcode_mode{
+enum opcode_mode_types{
 	MD_ACCUM,
 	MD_ABSOL,
 	MD_ABS_X,
@@ -100,10 +102,41 @@ u8 opcode_to_ins[256] = {
 /* F */ BEQ, SBC, _N_, _N_, _N_, SBC, INC, _N_, SED, SBC, _N_, _N_, _N_, SBC, INC, _N_,
 };
 
-/*
-	allocates and returns pointer to kiwi context
-	return 0 on failure
-*/
+u8 opcode_to_cycles[256] = {
+/*      0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F */
+/* 0 */ 7, 6, 2, 8, 3, 3, 5, 5, 3, 2, 2, 2, 4, 4, 6, 6,
+/* 1 */ 2, 5, 2, 8, 4, 4, 6, 6, 2, 4, 2, 7, 4, 4, 7, 7,
+/* 2 */ 6, 6, 2, 8, 3, 3, 5, 5, 4, 2, 2, 2, 4, 4, 6, 6,
+/* 3 */ 2, 5, 2, 8, 4, 4, 6, 6, 2, 4, 2, 7, 4, 4, 7, 7,
+/* 4 */ 6, 6, 2, 8, 3, 3, 5, 5, 3, 2, 2, 2, 3, 4, 6, 6,
+/* 5 */ 2, 5, 2, 8, 4, 4, 6, 6, 2, 4, 2, 7, 4, 4, 7, 7,
+/* 6 */ 6, 6, 2, 8, 3, 3, 5, 5, 4, 2, 2, 2, 5, 4, 6, 6,
+/* 7 */ 2, 5, 2, 8, 4, 4, 6, 6, 2, 4, 2, 7, 4, 4, 7, 7,
+/* 8 */ 2, 6, 2, 6, 3, 3, 3, 3, 2, 2, 2, 2, 4, 4, 4, 4,
+/* 9 */ 2, 6, 2, 6, 4, 4, 4, 4, 2, 5, 2, 5, 5, 5, 5, 5,
+/* A */ 2, 6, 2, 6, 3, 3, 3, 3, 2, 2, 2, 2, 4, 4, 4, 4,
+/* B */ 2, 5, 2, 5, 4, 4, 4, 4, 2, 4, 2, 4, 4, 4, 4, 4,
+/* C */ 2, 6, 2, 8, 3, 3, 5, 5, 2, 2, 2, 2, 4, 4, 6, 6,
+/* D */ 2, 5, 2, 8, 4, 4, 6, 6, 2, 4, 2, 7, 4, 4, 7, 7,
+/* E */ 2, 6, 2, 8, 3, 3, 5, 5, 2, 2, 2, 2, 4, 4, 6, 6,
+/* F */ 2, 5, 2, 8, 4, 4, 6, 6, 2, 4, 2, 7, 4, 4, 7, 7,
+};
+
+void kiwi_execute_opcode(struct kiwi_ctx *ctx)
+{
+	// get the opcode
+	printf("%u\r\n", ctx->pc);
+	u8 opcode = ctx->memory[ctx->pc++]; // this will change
+	u8 mode = opcode_to_mode
+	u8 cycles = 
+}
+
+void kiwi_reset_cpu(struct kiwi_ctx *ctx)
+{
+	ctx->pc = 0;
+	memset(&ctx->regs, 0, sizeof(ctx->regs));
+}
+
 struct kiwi_ctx* kiwi_create_ctx()
 {
 	struct kiwi_ctx * ctx;
