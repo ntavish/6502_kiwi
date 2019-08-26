@@ -281,7 +281,7 @@ u8 kiwi_execute_opcode(struct kiwi_ctx *ctx)
 
 	// other parameters
 	u8 cycles = opcode_to_cycles[opcode] + extra_cycles;
-	printf("opcode 0x%02x\tmode 0x%02x\tcycles %u\tPC->%u\tfunc %p\r\n", opcode, mode, cycles, ctx->pc, func);
+	printf("opcode 0x%02x\tmode 0x%02x\tcycles %u\tPC->0x%x\tfunc %p\r\n", opcode, mode, cycles, ctx->pc, func);
 
 	return cycles;
 }
