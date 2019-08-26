@@ -170,6 +170,7 @@ u8 kiwi_read_byte(struct kiwi_ctx *ctx, u16 addr)
 	if(dev) {
 		return dev->read(addr);
 	}
+	return 0;
 }
 
 void kiwi_write_byte(struct kiwi_ctx *ctx, u16 addr, u8 value)
@@ -305,7 +306,7 @@ struct kiwi_ctx* kiwi_create_ctx()
 	return ctx;
 }
 
-struct kiwi_ctx* kiwi_initialize_ctx(struct kiwi_ctx *ctx)
+void kiwi_initialize_ctx(struct kiwi_ctx *ctx)
 {
 	ctx->num_devices = 0;
 

@@ -77,7 +77,7 @@ struct kiwi_ctx* kiwi_create_ctx();
 /*
 	initializes the ctx argument by resetting the cpu state
 */
-struct kiwi_ctx* kiwi_initialize_ctx(struct kiwi_ctx *ctx);
+void kiwi_initialize_ctx(struct kiwi_ctx *ctx);
 
 /*
 	resets the cpu state
