@@ -244,7 +244,7 @@ static u8 kiwi_6502_address_mode(struct kiwi_ctx *ctx, u8 mode, u16 *addr)
 			if (*addr & 0x80) {
 				*addr |= 0xFF00;
 			}
-			*addr += ctx->pc;
+			*addr = ctx->pc + *(i16*)addr;
 			break;
 		case MD_ZPAGE:
 			*addr = (u16)kiwi_read_byte(ctx, ctx->pc++);
@@ -281,7 +281,19 @@ u8 kiwi_execute_opcode(struct kiwi_ctx *ctx)
 
 	// other parameters
 	u8 cycles = opcode_to_cycles[opcode] + extra_cycles;
-	printf("opcode 0x%02x\tmode 0x%02x\tcycles %u\tPC->0x%x\tfunc %p\r\n", opcode, mode, cycles, ctx->pc, func);
+	// printf("opcode 0x%02x\tmode 0x%02x\tcycles %u\tPC->0x%x\tfunc %p\r\n", opcode, mode, cycles, ctx->pc, func);
+	printf("PC=%04X, A=%02X, X=%02X, Y=%02X, S = %02X, P = %c%c__%c%c%c%c\n",
+		ctx->pc,
+		ctx->regs.ac,
+		ctx->regs.x,
+		ctx->regs.y,
+		ctx->regs.sp,
+		(ctx->regs.sr & SF_N) ? 'N' : 'n',
+		(ctx->regs.sr & SF_O) ? 'V' : 'v',
+		(ctx->regs.sr & SF_D) ? 'D' : 'd',
+		(ctx->regs.sr & SF_I) ? 'I' : 'i',
+		(ctx->regs.sr & SF_Z) ? 'Z' : 'z',
+		(ctx->regs.sr & SF_C) ? 'C' : 'c');
 
 	return cycles;
 }
