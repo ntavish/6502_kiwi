@@ -1,9 +1,9 @@
 # Kiwi 6502 emulator
 
 This is another 6502 emulator written in C. The goal for this one was learning
-how to write on, and hopefully use it to emulate a complete system like the NES
+how to write one, and hopefully use it to emulate a complete system like the NES
 sometime. There are a few pending things and more tests required, which will
-should be done soon.
+be done soon.
 
 ## Compiling
 
@@ -18,7 +18,7 @@ gcc -Wall -Wextra -Wno-unused-parameter -O0 -ggdb -I. kiwi.c instructions.c main
 
 ## Running
 
-Once compiled run `./kiwi` or `make run` to run a functional test of the CPU.
+Once compiled, run as `./kiwi` or `make run` to run a functional test of the CPU.
 The PC will loop on `0x056D`, which means the supplied tests have passed.
 
 ### Notes on `main.c`
