@@ -18,7 +18,7 @@ gcc -Wall -Wextra -Wno-unused-parameter -O0 -ggdb -I. kiwi.c instructions.c main
 
 ## Running
 
-Once compiled, run as `./kiwi` or `make run` to run a functional test of the CPU.
+Once compiled, run as `./kiwi 6502_functional_test.bin` or `make run` to run a functional test of the CPU.
 The PC will loop on `0x056D`, which means the supplied tests have passed.
 
 ### Notes on `main.c`
@@ -35,4 +35,5 @@ also.
 ROM is a added using `mmap()` and RAM is a `uint8_t` array in the code.
 
 There are no I/O ports or interrupts, and as mentioned above, the tests have
-passed when the CPU is looping on PC.
+passed when the CPU is looping on PC. The current test binary fails test cases
+related to that.

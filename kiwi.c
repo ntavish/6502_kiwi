@@ -37,20 +37,20 @@ enum opcode_mode_types{
 
 // not a useful table
 u8 mode_to_size[] = {
-	1, // MD_ACCUM
-	3, // MD_ABSOL
-	3, // MD_ABS_X
-	3, // MD_ABS_Y
-	2, // MD_IMMED
-	1, // MD_IMPLI
-	3, // MD_INDIR
-	2, // MD_X_IND
-	2, // MD_IND_Y
-	2, // MD_RELAT
-	2, // MD_ZPAGE
-	2, // MD_ZPG_X
-	2, // MD_ZPG_Y
-	1, // MD_NOTVL
+	1, /* MD_ACCUM */
+	3, /* MD_ABSOL */
+	3, /* MD_ABS_X */
+	3, /* MD_ABS_Y */
+	2, /* MD_IMMED */
+	1, /* MD_IMPLI */
+	3, /* MD_INDIR */
+	2, /* MD_X_IND */
+	2, /* MD_IND_Y */
+	2, /* MD_RELAT */
+	2, /* MD_ZPAGE */
+	2, /* MD_ZPG_X */
+	2, /* MD_ZPG_Y */
+	1, /* MD_NOTVL */
 };
 
 u8 opcode_to_mode[256] = {
@@ -155,7 +155,7 @@ static inline struct bus_device *kiwi_find_mapped_dev(struct kiwi_ctx *ctx, u16 
 
 	for(u8 i=0; i<ctx->num_devices; i++) {
 		dev = &ctx->dev[i];
-		if(addr >= dev->start && addr <= dev->end) {
+		if (addr >= dev->start && addr <= dev->end) {
 			return dev;
 		}
 	}
@@ -167,7 +167,7 @@ u8 kiwi_read_byte(struct kiwi_ctx *ctx, u16 addr)
 {
 	struct bus_device *dev = kiwi_find_mapped_dev(ctx, addr);
 
-	if(dev) {
+	if (dev) {
 		return dev->read(addr);
 	}
 	return 0;
@@ -177,7 +177,7 @@ void kiwi_write_byte(struct kiwi_ctx *ctx, u16 addr, u8 value)
 {
 	struct bus_device *dev = kiwi_find_mapped_dev(ctx, addr);
 
-	if(dev) {
+	if (dev) {
 		return dev->write(addr, value);
 	}
 }
@@ -216,10 +216,10 @@ static u8 kiwi_6502_address_mode(struct kiwi_ctx *ctx, u8 mode, u16 *addr)
 			*addr = ctx->pc++;
 			break;
 		case MD_IMPLI:
-			//nothing to do, it's implied
+			/* nothing to do, it's implied */
 			break;
 		case MD_INDIR:
-			// JMP indirect 0x6C is the only instruction which uses this
+			/* JMP indirect 0x6C is the only instruction which uses this */
 			lb = kiwi_read_byte(ctx, ctx->pc++);
 			hb = kiwi_read_byte(ctx, ctx->pc++);
 			*addr = (hb << 8) | lb;
@@ -228,8 +228,8 @@ static u8 kiwi_6502_address_mode(struct kiwi_ctx *ctx, u8 mode, u16 *addr)
 			*addr = (hb << 8) | lb;
 			break;
 		case MD_X_IND:
-			// this one is weird, it will be like 
-			// see https://github.com/spacerace/6502/blob/master/doc/6502-asm-doc/dr6502-docs/ADDRESS.DOC#L277
+			/* this one is weird, it will be like 
+			   see https://github.com/spacerace/6502/blob/master/doc/6502-asm-doc/dr6502-docs/ADDRESS.DOC#L277 */
 			lb = (kiwi_read_byte(ctx, ctx->pc++) + ctx->regs.x) & 0xFF;
 			hb = (lb + 1) & 0xFF;
 			*addr = kiwi_read_byte(ctx, lb) + (kiwi_read_byte(ctx, hb) << 8);
@@ -265,24 +265,24 @@ static u8 kiwi_6502_address_mode(struct kiwi_ctx *ctx, u8 mode, u16 *addr)
 
 u8 kiwi_execute_opcode(struct kiwi_ctx *ctx)
 {
-	// get the opcode, and increment pc by 1
+	/* get the opcode, and increment pc by 1 */
 	u8 opcode = kiwi_read_byte(ctx, ctx->pc++);
 	u8 mode = opcode_to_mode[opcode];
 	
-	// calculate address from mode
+	/* calculate address from mode */
 	u16 addr;
 	u8 acc = kiwi_6502_address_mode(ctx, mode, &addr);
 
-	// find out instruction function
+	/* find out instruction function */
 	u8 (*func)(struct kiwi_ctx *ctx, u16 addr, u8 acc) = instruction_to_function[opcode_to_ins[opcode]];
 	
-	// execute instruction
+	/* execute instruction */
 	u8 extra_cycles = func(ctx, addr, acc);
 
-	// other parameters
+	/* other parameters */
 	u8 cycles = opcode_to_cycles[opcode] + extra_cycles;
-	// printf("opcode 0x%02x\tmode 0x%02x\tcycles %u\tPC->0x%x\tfunc %p\r\n", opcode, mode, cycles, ctx->pc, func);
-	printf("PC=%04X, A=%02X, X=%02X, Y=%02X, S = %02X, P = %c%c__%c%c%c%c\n",
+	/* printf("opcode 0x%02x\tmode 0x%02x\tcycles %u\tPC->0x%x\tfunc %p\r\n", opcode, mode, cycles, ctx->pc, func); */
+	printf("\e[0;32mPC:\e[0m = 0x%04X, A=%02X, X=%02X, Y=%02X, S = %02X, P = %c%c__%c%c%c%c\n",
 		ctx->pc,
 		ctx->regs.ac,
 		ctx->regs.x,
@@ -309,7 +309,7 @@ struct kiwi_ctx* kiwi_create_ctx()
 	struct kiwi_ctx * ctx;
 	ctx = (struct kiwi_ctx*) malloc(sizeof(struct kiwi_ctx));
 	
-	if(!ctx) {
+	if (!ctx) {
 		return 0;
 	}
 
@@ -327,7 +327,7 @@ void kiwi_initialize_ctx(struct kiwi_ctx *ctx)
 
 u8 kiwi_attach_device(struct kiwi_ctx *ctx, struct bus_device *dev)
 {
-	if(ctx->num_devices >= MAX_DEVICES) {
+	if (ctx->num_devices >= MAX_DEVICES) {
 		ctx->num_devices = MAX_DEVICES;
 		return ctx->num_devices;
 	}

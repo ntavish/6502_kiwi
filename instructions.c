@@ -26,18 +26,27 @@
 #define INT_SET(x)	( (x) ? (ctx->regs.sr |= SF_I) : (ctx->regs.sr &= ~SF_I) )
 #define DECIMAL_SET(x)	( (x) ? (ctx->regs.sr |= SF_D) : (ctx->regs.sr &= ~SF_D) )
 
+#if defined(DEBUG)
+#include <stdio.h>
+#define DEBUG_INS()	printf("\e[0;31m%s\e[0m addr: 0x%04X acc: 0x%04X\n", __func__, addr, acc);
+#else 
+#define DEBUG_INS()
+#endif
+
 u8 f_adc(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 {
+	DEBUG_INS();
+
 	u8 operand = READ_BYTE(addr);
 	u16 result = ACC + operand + CARRY_VAL();
 
-	if(DECIMAL_VAL()) {
-		if( (ACC & 0x0F) + (operand & 0x0F) + CARRY_VAL() > 9 ) {
+	if (DECIMAL_VAL()) {
+		if ( (ACC & 0x0F) + (operand & 0x0F) + CARRY_VAL() > 9 ) {
 			result += 6;
 		}
 		NEGATIVE_SET(result & 0x80);
 		OVF_SET(((ACC ^ result) & (operand ^ result) & 0x80) != 0);
-		if(result > 0x99) {
+		if (result > 0x99) {
 			result += 0x60;
 		}
 		CARRY_SET(result > 0x99);
@@ -55,6 +64,8 @@ u8 f_adc(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 
 u8 f_and(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 {
+	DEBUG_INS();
+
 	u8 operand = READ_BYTE(addr);
 	u8 result = operand & ACC;
 
@@ -67,9 +78,11 @@ u8 f_and(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 
 u8 f_asl(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 {
+	DEBUG_INS();
+
 	u16 result;
 
-	if(acc) {
+	if (acc) {
 		result = ACC << 1;
 		CARRY_SET(result > 0xFF);
 		ACC = result;
@@ -88,7 +101,9 @@ u8 f_asl(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 
 u8 f_bcc(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 {
-	if(!CARRY_VAL()) {
+	DEBUG_INS();
+
+	if (!CARRY_VAL()) {
 		PC = addr;
 	}
 	return 0;
@@ -96,7 +111,9 @@ u8 f_bcc(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 
 u8 f_bcs(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 {
-	if(CARRY_VAL()) {
+	DEBUG_INS();
+
+	if (CARRY_VAL()) {
 		PC = addr;
 	}
 	return 0;
@@ -104,7 +121,9 @@ u8 f_bcs(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 
 u8 f_beq(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 {
-	if(ZERO_VAL()) {
+	DEBUG_INS();
+
+	if (ZERO_VAL()) {
 		PC = addr;
 	}
 	return 0;
@@ -112,11 +131,13 @@ u8 f_beq(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 
 u8 f_bit(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 {
+	DEBUG_INS();
+
 	u8 operand = READ_BYTE(addr);
 	u8 result = ACC & operand;
 
-	// bit 7 and 6 (N and V/O) are copied from operand to status
-	// zero bit is set if ACC & operand is zero
+	/* bit 7 and 6 (N and V/O) are copied from operand to status
+	   zero bit is set if ACC & operand is zero */
 	NEGATIVE_SET(operand & 0x80);
 	OVF_SET(operand & SF_O);
 	ZERO_SET(!result);
@@ -125,7 +146,9 @@ u8 f_bit(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 
 u8 f_bmi(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 {
-	if(NEGATIVE_VAL()) {
+	DEBUG_INS();
+
+	if (NEGATIVE_VAL()) {
 		PC = addr;
 	}
 	return 0;
@@ -133,7 +156,9 @@ u8 f_bmi(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 
 u8 f_bne(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 {
-	if(!ZERO_VAL()) {
+	DEBUG_INS();
+
+	if (!ZERO_VAL()) {
 		PC = addr;
 	}
 	return 0;
@@ -141,7 +166,9 @@ u8 f_bne(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 
 u8 f_bpl(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 {
-	if(!NEGATIVE_VAL()) {
+	DEBUG_INS();
+
+	if (!NEGATIVE_VAL()) {
 		PC = addr;
 	}
 	return 0;
@@ -149,6 +176,8 @@ u8 f_bpl(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 
 u8 f_brk(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 {
+	DEBUG_INS();
+
 	PUSH(PC >> 8);
 	PUSH(PC & 0xFF);
 	PUSH(STATUS | 0x30);
@@ -160,7 +189,9 @@ u8 f_brk(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 
 u8 f_bvc(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 {
-	if(!OVF_VAL()) {
+	DEBUG_INS();
+
+	if (!OVF_VAL()) {
 		PC = addr;
 	}
 	return 0;
@@ -168,7 +199,9 @@ u8 f_bvc(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 
 u8 f_bvs(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 {
-	if(OVF_VAL()) {
+	DEBUG_INS();
+
+	if (OVF_VAL()) {
 		PC = addr;
 	}
 	return 0;	
@@ -176,35 +209,45 @@ u8 f_bvs(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 
 u8 f_clc(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 {
+	DEBUG_INS();
+
 	CARRY_SET(0);
 	return 0;
 }
 
 u8 f_cld(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 {
+	DEBUG_INS();
+
 	DECIMAL_SET(0);
 	return 0;
 }
 
 u8 f_cli(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 {
+	DEBUG_INS();
+
 	INT_SET(0);
 	return 0;
 }
 
 u8 f_clv(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 {
+	DEBUG_INS();
+
 	OVF_SET(0);
 	return 0;
 }
 
 u8 f_cmp(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 {
+	DEBUG_INS();
+
 	u8 operand = READ_BYTE(addr);
 	u16 result = ACC - operand;
 
-	// https://www.atariarchives.org/alp/appendix_1.php
-	// C is set if value is greater or equal to ACC
+	/* https://www.atariarchives.org/alp/appendix_1.php
+	   C is set if value is greater or equal to ACC */
 	CARRY_SET(operand <= ACC);
 	NEGATIVE_SET(result & 0x80);
 	ZERO_SET(!result);
@@ -213,6 +256,8 @@ u8 f_cmp(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 
 u8 f_cpx(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 {
+	DEBUG_INS();
+
 	u8 operand = READ_BYTE(addr);
 	u16 result = X - operand;
 
@@ -224,6 +269,8 @@ u8 f_cpx(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 
 u8 f_cpy(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 {
+	DEBUG_INS();
+
 	u8 operand = READ_BYTE(addr);
 	u16 result = Y - operand;
 
@@ -235,7 +282,9 @@ u8 f_cpy(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 
 u8 f_dec(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 {
-	if(acc) {
+	DEBUG_INS();
+
+	if (acc) {
 		ACC--;
 		NEGATIVE_SET(ACC & 0x80);
 		ZERO_SET(!ACC);
@@ -251,6 +300,8 @@ u8 f_dec(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 
 u8 f_dex(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 {
+	DEBUG_INS();
+
 	X--;
 	NEGATIVE_SET(X & 0x80);
 	ZERO_SET(!X);
@@ -259,6 +310,8 @@ u8 f_dex(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 
 u8 f_dey(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 {
+	DEBUG_INS();
+
 	Y--;
 	NEGATIVE_SET(Y & 0x80);
 	ZERO_SET(!Y);
@@ -267,6 +320,8 @@ u8 f_dey(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 
 u8 f_eor(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 {
+	DEBUG_INS();
+
 	ACC ^= READ_BYTE(addr);
 	NEGATIVE_SET(ACC & 0x80);
 	ZERO_SET(!ACC);
@@ -275,6 +330,8 @@ u8 f_eor(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 
 u8 f_inc(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 {
+	DEBUG_INS();
+
 	u8 result = READ_BYTE(addr) + 1;
 	NEGATIVE_SET(result & 0x80);
 	ZERO_SET(!result);
@@ -284,6 +341,8 @@ u8 f_inc(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 
 u8 f_inx(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 {
+	DEBUG_INS();
+
 	X++;
 	NEGATIVE_SET(X & 0x80);
 	ZERO_SET(!X);
@@ -292,6 +351,8 @@ u8 f_inx(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 
 u8 f_iny(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 {
+	DEBUG_INS();
+
 	Y++;
 	NEGATIVE_SET(Y & 0x80);
 	ZERO_SET(!Y);
@@ -300,13 +361,17 @@ u8 f_iny(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 
 u8 f_jmp(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 {
-	// TODO fix all functions with variable clock cycles
+	DEBUG_INS();
+
+	/* TODO fix all functions with variable clock cycles */
 	PC = addr;
 	return 0;
 }
 
 u8 f_jsr(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 {
+	DEBUG_INS();
+
 	PC--;
 	PUSH(PC >> 8);
 	PUSH(PC & 0xFF);
@@ -316,6 +381,8 @@ u8 f_jsr(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 
 u8 f_lda(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 {
+	DEBUG_INS();
+
 	ACC = READ_BYTE(addr);
 	NEGATIVE_SET(ACC & 0x80);
 	ZERO_SET(!ACC);
@@ -324,6 +391,8 @@ u8 f_lda(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 
 u8 f_ldx(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 {
+	DEBUG_INS();
+
 	X = READ_BYTE(addr);
 	NEGATIVE_SET(X & 0x80);
 	ZERO_SET(!X);
@@ -332,6 +401,8 @@ u8 f_ldx(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 
 u8 f_ldy(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 {
+	DEBUG_INS();
+
 	Y = READ_BYTE(addr);
 	NEGATIVE_SET(Y & 0x80);
 	ZERO_SET(!Y);
@@ -340,6 +411,8 @@ u8 f_ldy(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 
 u8 f_lsr(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 {
+	DEBUG_INS();
+
 	uint8_t result = READ_BYTE(addr);
 
 	CARRY_SET(result & 0x01);
@@ -352,11 +425,15 @@ u8 f_lsr(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 
 u8 f_nop(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 {
+	DEBUG_INS();
+
 	return 0;
 }
 
 u8 f_ora(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 {
+	DEBUG_INS();
+
 	ACC = READ_BYTE(addr);
 	NEGATIVE_SET(ACC & 0x80);
 	ZERO_SET(!ACC);
@@ -365,18 +442,24 @@ u8 f_ora(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 
 u8 f_pha(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 {
+	DEBUG_INS();
+
 	PUSH(ACC);
 	return 0;
 }
 
 u8 f_php(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 {
+	DEBUG_INS();
+
 	PUSH(STATUS | 0x30);
 	return 0;
 }
 
 u8 f_pla(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 {
+	DEBUG_INS();
+
 	ACC = POP();
 	NEGATIVE_SET(ACC & 0x80);
 	ZERO_SET(!ACC);
@@ -385,6 +468,8 @@ u8 f_pla(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 
 u8 f_plp(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 {
+	DEBUG_INS();
+
 	/* pull flags from stack, but ignore bit 4 and 5 */
 	STATUS = (STATUS & ((1 << 4) | (1 << 5))) | (POP() & ~(u8)((1 << 4) | (1 << 5)));
 	return 0;
@@ -392,10 +477,12 @@ u8 f_plp(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 
 u8 f_rol(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 {
-	if(acc) {
+	DEBUG_INS();
+
+	if (acc) {
 		u16 result = ACC;
 		result <<= 1;
-		if(CARRY_VAL()) {
+		if (CARRY_VAL()) {
 			result |= 0x01;
 		}
 		CARRY_SET(result > 0xFF);
@@ -407,7 +494,7 @@ u8 f_rol(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 	else {
 		u16 result = READ_BYTE(addr);
 		result <<= 1;
-		if(CARRY_VAL()) {
+		if (CARRY_VAL()) {
 			result |= 0x01;
 		}
 		CARRY_SET(result > 0xFF);
@@ -421,9 +508,11 @@ u8 f_rol(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 
 u8 f_ror(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 {
-	if(acc) {
+	DEBUG_INS();
+
+	if (acc) {
 		u16 result = ACC;
-		if(CARRY_VAL()) {
+		if (CARRY_VAL()) {
 			result |= 0x100;
 		}
 		CARRY_SET(result & 0x01);
@@ -435,7 +524,7 @@ u8 f_ror(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 	}
 	else {
 		u16 result = READ_BYTE(addr);
-		if(CARRY_VAL()) {
+		if (CARRY_VAL()) {
 			result |= 0x100;
 		}
 		CARRY_SET(result & 0x01);
@@ -450,6 +539,8 @@ u8 f_ror(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 
 u8 f_rti(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 {
+	DEBUG_INS();
+
 	u8 lb, hb;
 
 	STATUS = POP();
@@ -462,6 +553,8 @@ u8 f_rti(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 
 u8 f_rts(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 {
+	DEBUG_INS();
+
 	u8 lb, hb;
 
 	STATUS = POP();
@@ -474,13 +567,15 @@ u8 f_rts(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 
 u8 f_sbc(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 {
+	DEBUG_INS();
+
 	u8 operand = READ_BYTE(addr);
 	u16 result = ACC - operand - (CARRY_VAL() ? 0 : 1);
 	
 	ZERO_SET(!result);
 	WRITE_BYTE(addr, result);
 
-	if(DECIMAL_VAL()) {
+	if (DECIMAL_VAL()) {
 		if ( ((ACC & 0x0F) - (CARRY_VAL() ? 0 : 1)) < (operand & 0x0F)) {
 			result -= 6;
 		}
@@ -496,42 +591,56 @@ u8 f_sbc(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 
 u8 f_sec(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 {
+	DEBUG_INS();
+
 	CARRY_SET(1);
 	return 0;
 }
 
 u8 f_sed(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 {
+	DEBUG_INS();
+
 	DECIMAL_SET(1);
 	return 0;
 }
 
 u8 f_sei(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 {
+	DEBUG_INS();
+
 	INT_SET(1);
 	return 0;
 }
 
 u8 f_sta(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 {
+	DEBUG_INS();
+
 	WRITE_BYTE(addr, ACC);
 	return 0;
 }
 
 u8 f_stx(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 {
+	DEBUG_INS();
+
 	WRITE_BYTE(addr, X);
 	return 0;
 }
 
 u8 f_sty(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 {
+	DEBUG_INS();
+
 	WRITE_BYTE(addr, Y);
 	return 0;
 }
 
 u8 f_tax(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 {
+	DEBUG_INS();
+
 	X = ACC;
 	NEGATIVE_SET(X & 0x80);
 	ZERO_SET(!X);
@@ -540,6 +649,8 @@ u8 f_tax(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 
 u8 f_tay(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 {
+	DEBUG_INS();
+
 	Y = ACC;
 	NEGATIVE_SET(Y & 0x80);
 	ZERO_SET(!Y);
@@ -548,6 +659,8 @@ u8 f_tay(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 
 u8 f_tsx(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 {
+	DEBUG_INS();
+
 	X = SP;
 	NEGATIVE_SET(X & 0x80);
 	ZERO_SET(!X);
@@ -556,6 +669,8 @@ u8 f_tsx(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 
 u8 f_txa(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 {
+	DEBUG_INS();
+
 	u8 result = X;
 	NEGATIVE_SET(result & 0x80);
 	ZERO_SET(!result);
@@ -565,12 +680,16 @@ u8 f_txa(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 
 u8 f_txs(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 {
+	DEBUG_INS();
+
 	SP = X;
 	return 0;
 }
 
 u8 f_tya(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 {
+	DEBUG_INS();
+
 	ACC = Y;
 	NEGATIVE_SET(ACC & 0x80);
 	ZERO_SET(!ACC);
@@ -579,5 +698,7 @@ u8 f_tya(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 
 u8 f__n_(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 {
+	DEBUG_INS();
+
 	return 0;
 }
