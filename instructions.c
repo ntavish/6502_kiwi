@@ -557,7 +557,6 @@ u8 f_rts(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 
 	u8 lb, hb;
 
-	STATUS = POP();
 	lb = POP();
 	hb = POP();
 	PC = ((hb << 8) | lb) + 1;
