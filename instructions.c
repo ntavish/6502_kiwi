@@ -385,7 +385,8 @@ u8 f_pla(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 
 u8 f_plp(struct kiwi_ctx *ctx, u16 addr, u8 acc)
 {
-	SP = POP();
+	/* pull flags from stack, but ignore bit 4 and 5 */
+	STATUS = (STATUS & ((1 << 4) | (1 << 5))) | (POP() & ~(u8)((1 << 4) | (1 << 5)));
 	return 0;
 }
 
