@@ -15,38 +15,46 @@ kiwi not emu for 6502
 //=== devices list ====
 
 // ram mirrors every 0x800 bytes
-static u8 ram_buf[0x800];
+static u8 ram_buf[0x400];
 static void ram_write(u16 addr, u8 value)
 {
-	ram_buf[addr % 0x800] = value;
+	ram_buf[addr] = value;
 }
 
 static u8 ram_read(u16 addr)
 {
-	return ram_buf[addr % 0x800];
+	return ram_buf[addr];
 }
 
-struct bus_device ram = {
+static struct bus_device ram = {
 	.start = 0x0000,
-	.end   = 0x01FF,
+	.end   = 0x03ff,
 	.read  = ram_read,
 	.write = ram_write,
 };
 
-void * rom_base_addr;
+static void * rom_base_addr;
+static struct stat finfo;
 static void rom_write(u16 addr, u8 value)
 {
-	// actually disallow writes
-	return;
-	// u8 *p = rom_base_addr;
-	// p[addr] = value;
+	#if defined(DEBUG)
+	printf("%s 0x%04X\n", __func__, addr);
+	#endif
+	u8 *p = rom_base_addr;
+	if (addr < finfo.st_size) {
+		p[addr] = value;
+	}
 }
 static u8 rom_read(u16 addr)
 {
 	u8 *p = rom_base_addr;
-	return p[addr];
+	if (addr < finfo.st_size) {
+		return p[addr];
+	} else {
+		return 0xff;
+	}
 }
-struct bus_device rom = {
+static struct bus_device rom = {
 	.start = 0x0400,
 	.end   = 0xFFFF,
 	.read  = rom_read,
@@ -76,7 +84,7 @@ int main()
 	kiwi_attach_device(ctx, &ram);
 	kiwi_attach_device(ctx, &rom);
 
-	for(u32 i=0; i<0x400; i++) {
+	for(u32 i=0; i<sizeof(ram_buf); i++) {
 		ram_buf[i] = rom_read(i);
 	}
 
